@@ -141,9 +141,27 @@ const Question = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+      <Text style={styles.title}>Livestock Health Assessment</Text>
+      {cattle ? 
+        <TouchableOpacity 
+        style={[
+          styles.continueButton, 
+        ]}
+        onPress={
+          () => {navigation.navigate("AddCattle")}
+        }
+      >
+        <Text style={styles.continueButtonText}>Add Cattle</Text>
+      </TouchableOpacity>
+      :
+        <>  
         {/* Cattle Dropdown */}
         <View style={styles.dropdownContainer}>
-          <Text style={styles.label}>Select Cattle:</Text>
+          <Text style={styles.label}>Select your Cattle:</Text>
           <Picker
             selectedValue={selectedCattle}
             onValueChange={(itemValue) => setSelectedCattle(itemValue)}
@@ -154,12 +172,10 @@ const Question = ({ navigation }) => {
             ))}
           </Picker>
         </View>
+        </>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>Livestock Health Assessment</Text>
+      }
+
         {questions.map((question, index) => (
           <View key={index} style={styles.questionContainer}>
             <Text style={styles.questionText}>{question}</Text>

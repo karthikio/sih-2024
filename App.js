@@ -21,6 +21,9 @@ import Question from "./screens/Question";
 import Map from "./screens/Map";
 import AddCattle from "./screens/AddCattle";
 import VetRegister from "./screens/VetRegister";
+import ReportDetail from "./screens/ReportDetail";
+import Reports from "./screens/Reports";
+
 
 // Navigation Containers
 const Tab = createBottomTabNavigator();
@@ -213,6 +216,8 @@ const App = () => {
         />
         <Stack.Screen name="ChatBot" component={ChatBot}/>
         <Stack.Screen name="AddCattle" component={AddCattle} />
+        <Stack.Screen name="Reports" component={Reports} />
+        <Stack.Screen name="ReportDetail" component={ReportDetail} />
         </>
         )}
       </Stack.Navigator>

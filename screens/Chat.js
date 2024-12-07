@@ -9,8 +9,8 @@ import {
     Alert,
     Modal,
     TextInput,
-    Button,
-    ActivityIndicator,
+    Keyboard,
+    TouchableWithoutFeedback
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
 import {
@@ -20,30 +20,41 @@ import {
     onSnapshot,
     serverTimestamp,
     doc,
+    updateDoc,
+    query,
+    orderBy,
 } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import { format, isToday } from "date-fns";
 import * as ImageManipulator from "expo-image-manipulator";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../firebaseConfig";
+import { Ionicons } from "@expo/vector-icons";
 
 const CommunityChat = () => {
     const [chat, setChat] = useState([]);
     const [uploading, setUploading] = useState(false);
-    const [sheetVisible, setSheetVisible] = useState(false);
     const [message, setMessage] = useState("");
     const [imagePreview, setImagePreview] = useState(null);
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const user = auth.currentUser;
 
-    // Fetch chat messages
+    // Fetch chat messages with real-time updates
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "CommunityChat"), (snapshot) => {
+        const chatQuery = query(
+            collection(db, "CommunityChat"), 
+            orderBy("timestamp", "desc")
+        );
+        const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
             const messages = snapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
+                likes: doc.data().likes || 0,
+                replies: doc.data().replies || [],
             }));
-            setChat(messages.sort((a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis())); // Sort by latest
+            setChat(messages);
         });
         return unsubscribe;
     }, []);
@@ -54,25 +65,27 @@ const CommunityChat = () => {
             return;
         }
 
-        setUploading(true); // Start loading
+        setUploading(true);
 
         try {
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
-            let userName = "Anonymous";
-            if (userDoc.exists()) {
-                userName = userDoc.data().name || "Anonymous";
-            }
+            const userName = userDoc.exists() 
+                ? userDoc.data().name || "Anonymous" 
+                : "Anonymous";
 
             const messageData = {
                 message,
                 userId: user.uid,
                 userName,
                 timestamp: serverTimestamp(),
+                likes: 0,
+                replies: [],
+                parentId: replyingTo ? replyingTo.id : null,
             };
 
             if (imagePreview) {
-                const compressedImage = await ImageManipulator.ImageManipulator(
+                const compressedImage = await ImageManipulator.manipulateAsync(
                     imagePreview,
                     [{ resize: { width: 800 } }],
                     { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
@@ -89,20 +102,38 @@ const CommunityChat = () => {
 
             await addDoc(collection(db, "CommunityChat"), messageData);
 
-            // Instantly update chat locally
-            setChat((prevChat) => [
-                { id: Date.now().toString(), ...messageData, timestamp: new Date() },
-                ...prevChat,
-            ]);
+            // Update parent message with reply if it's a reply
+            if (replyingTo) {
+                const parentDocRef = doc(db, "CommunityChat", replyingTo.id);
+                await updateDoc(parentDocRef, {
+                    replies: [...(replyingTo.replies || []), messageData],
+                });
+            }
 
             setMessage("");
             setImagePreview(null);
-            setSheetVisible(false);
+            setReplyingTo(null);
+            setModalVisible(false);
+            Keyboard.dismiss();
         } catch (error) {
             console.error("Error sending message:", error);
             Alert.alert("Error", "Failed to send the message.");
         } finally {
-            setUploading(false); // Stop loading
+            setUploading(false);
+        }
+    };
+
+    const handleLike = async (messageId) => {
+        try {
+            const messageRef = doc(db, "CommunityChat", messageId);
+            const messageDoc = await getDoc(messageRef);
+            const currentLikes = messageDoc.data().likes || 0;
+            
+            await updateDoc(messageRef, {
+                likes: currentLikes + 1,
+            });
+        } catch (error) {
+            console.error("Error liking message:", error);
         }
     };
 
@@ -131,67 +162,157 @@ const CommunityChat = () => {
         }
     };
 
+    const renderMessage = ({ item }) => (
+        <View style={styles.messageContainer}>
+            <Text style={styles.userName}>{item.userName}</Text>
+            <Text style={styles.timestamp}>
+                {item.timestamp 
+                    ? (isToday(new Date(item.timestamp?.toMillis()))
+                        ? `Today at ${format(new Date(item.timestamp.toMillis()), "h:mm a")}`
+                        : format(new Date(item.timestamp.toMillis()), "MMM d, yyyy 'at' h:mm a"))
+                    : "Just now"
+                }
+            </Text>
+            {item.imageUrl && (
+                <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            )}
+            {item.message && <Text style={styles.message}>{item.message}</Text>}
+            
+            <View style={styles.actionContainer}>
+                <TouchableOpacity 
+                    style={styles.likeButton}
+                    onPress={() => handleLike(item.id)}
+                >
+                    <Ionicons name="heart-outline" size={20} color="#347928" />
+                    <Text style={styles.likeCount}>{item.likes || 0}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.replyButton}
+                    onPress={() => {
+                        setReplyingTo(item);
+                        setModalVisible(true);
+                    }}
+                >
+                    <Ionicons name="chatbubble-outline" size={20} color="#347928" />
+                    <Text style={styles.replyCount}>
+                        {item.replies ? item.replies.length : 0}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Render Replies */}
+            {item.replies && item.replies.map((reply, index) => (
+                <View key={index} style={styles.replyContainer}>
+                    <Text style={styles.replyUserName}>{reply.userName}</Text>
+                    <Text style={styles.replyMessage}>{reply.message}</Text>
+                    {reply.imageUrl && (
+                        <Image 
+                            source={{ uri: reply.imageUrl }} 
+                            style={styles.replyImage} 
+                        />
+                    )}
+                </View>
+            ))}
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             <Text style={styles.sectionTitle}>Community Chat</Text>
             <FlatList
                 data={chat}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.messageContainer}>
-                        <Text style={styles.userName}>{item.userName}</Text>
-                        {item.timestamp && (
-                            <Text style={styles.timestamp}>
-                                {isToday(new Date(item.timestamp.toMillis()))
-                                    ? `Today at ${format(new Date(item.timestamp.toMillis()), "h:mm a")}`
-                                    : format(new Date(item.timestamp.toMillis()), "MMM d, yyyy 'at' h:mm a")}
-                            </Text>
-                        )}
-                        {item.imageUrl && (
-                            <Image source={{ uri: item.imageUrl }} style={styles.image} />
-                        )}
-                        {item.message && <Text style={styles.message}>{item.message}</Text>}
-                    </View>
-                )}
+                renderItem={renderMessage}
             />
 
-            <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setSheetVisible(true)}
+            <TouchableOpacity 
+                style={styles.fabButton}
+                onPress={() => {
+                    setReplyingTo(null);
+                    setModalVisible(true);
+                }}
             >
-                <Text style={styles.addButtonText}>+</Text>
+                <Ionicons name="add" size={24} color="white" />
             </TouchableOpacity>
 
-            <Modal visible={sheetVisible} transparent>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(false);
+                    setImagePreview(null);
+                }}
+            >
+            <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
                 <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>New Message</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Type your message..."
-                            value={message}
-                            onChangeText={setMessage}
-                            editable={!uploading}
-                        />
+                    {replyingTo && (
+                        <View style={styles.replyHeader}>
+                            <Text style={styles.replyHeaderText}>
+                                Replying to {replyingTo.userName}
+                            </Text>
+                            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                                <Ionicons name="close" size={24} color="red" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                <TouchableOpacity 
+                style={styles.closeModalButton}
+                onPress={() => {
+                    setModalVisible(false);
+                    setImagePreview(null);
+                    setMessage("");
+                }}
+                >
+                <Text style={styles.closeModalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                    <TextInput
+                        style={styles.messageInput}
+                        placeholder="Type your message..."
+                        placeholderTextColor="#cccccc"
+                        multiline
+                        value={message}
+                        onChangeText={setMessage}
+                        editable={!uploading}
+                    />
                         {imagePreview && (
-                            <Image
-                                source={{ uri: imagePreview }}
-                                style={styles.previewImage}
-                            />
+                            <View style={styles.previewContainer}>
+                                <Image 
+                                    source={{ uri: imagePreview }} 
+                                    style={styles.imagePreview} 
+                                />
+                                <TouchableOpacity 
+                                    style={styles.removeImageButton}
+                                    onPress={() => setImagePreview(null)}
+                                >
+                                    <Ionicons name="close" size={20} color="white" />
+                                </TouchableOpacity>
+                            </View>
                         )}
-                        {uploading && <ActivityIndicator size="large" color="#007BFF" />}
-                        <Button
-                            title="Upload Image"
-                            onPress={handleImageUpload}
-                            disabled={uploading}
-                        />
-                        <Button
-                            title="Send Message"
-                            onPress={handleSendMessage}
-                            disabled={uploading || (!message.trim() && !imagePreview)}
-                        />
-                        <Button title="Cancel" onPress={() => setSheetVisible(false)} />
+
+                        <View style={styles.actionButtonsContainer}>
+                            <TouchableOpacity
+                                style={styles.imagePickerButton}
+                                onPress={handleImageUpload}
+                                disabled={uploading}
+                            >
+                                <Ionicons name="image-outline" size={24} color="#347928" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.sendButton,
+                                    (uploading || (!message.trim() && !imagePreview)) && styles.disabledButton
+                                ]}
+                                onPress={handleSendMessage}
+                                disabled={uploading || (!message.trim() && !imagePreview)}
+                            >
+                                <Ionicons name="send" size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                        </TouchableWithoutFeedback>
                 </View>
             </Modal>
         </View>
@@ -199,11 +320,14 @@ const CommunityChat = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#f5f6f7", padding: 20 },
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f6f7',
+    },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: "bold",
-        color: "#333333",
+        fontWeight: 'bold',
+        color: '#333333',
         marginTop: 60,
         marginBottom: 8,
         marginHorizontal: 10,
@@ -211,48 +335,157 @@ const styles = StyleSheet.create({
     messageContainer: {
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: "#ddd",
+        borderBottomColor: '#ddd',
     },
-    userName: { fontWeight: "bold" },
-    message: { marginVertical: 5 },
-    image: { width: "100%", height: 200, borderRadius: 5, marginVertical: 5 },
-    addButton: {
-        position: "absolute",
+    userName: {
+        fontWeight: 'bold',
+    },
+    timestamp: {
+        color: '#888',
+        fontSize: 12,
+    },
+    message: {
+        marginVertical: 5,
+    },
+    image: {
+        width: '100%',
+        height: 200,
+        borderRadius: 5,
+        marginVertical: 5,
+    },
+    actionContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    likeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    likeCount: {
+        marginLeft: 5,
+        color: '#347928',
+    },
+    replyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    replyCount: {
+        marginLeft: 5,
+        color: '#347928',
+    },
+    replyContainer: {
+        marginLeft: 20,
+        marginTop: 5,
+        padding: 5,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+    },
+    replyUserName: {
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    replyMessage: {
+        fontSize: 12,
+    },
+    replyImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 5,
+        marginTop: 5,
+    },
+    fabButton: {
+        position: 'absolute',
         bottom: 20,
         right: 20,
+        backgroundColor: '#347928',
         width: 60,
         height: 60,
         borderRadius: 30,
-        backgroundColor: "#347928",
-        justifyContent: "center",
-        alignItems: "center",
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
     },
-    addButtonText: { color: "#fff", fontSize: 30 },
-    modalContainer: {
+    modalOverlay: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+        width: "100%", 
+        height: "100%"
     },
-    modalContent: {
-        width: "90%",
-        backgroundColor: "#fff",
+    modalContainer: {
+        backgroundColor: '#f5f6f7',
+        paddingTop: 60,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         padding: 20,
-        borderRadius: 10,
+        flex: 1,
     },
-    modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        paddingVertical: 10,
+    replyHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 10,
     },
-    previewImage: { width: "100%", height: 200, marginBottom: 10 },
+    replyHeaderText: {
+        fontWeight: 'bold',
+        color: '#347928',
+    },
+    messageInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        padding: 10,
+        minHeight: 100,
+        maxHeight: 200,
+        textAlignVertical: 'top',
+    },
+    previewContainer: {
+        position: 'relative',
+        marginTop: 10,
+    },
+    imagePreview: {
+        width: '100%',
+        height: 200,
+        borderRadius: 10,
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 15,
+        width: 30,
+        height: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    actionButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
+    imagePickerButton: {
+        backgroundColor: '#f0f0f0',
+        padding: 10,
+        borderRadius: 25,
+    },
+    sendButton: {
+        backgroundColor: '#347928',
+        padding: 10,
+        borderRadius: 25,
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    closeModalButtonText: {
+        textAlign: "right",
+        color: '#347928',
+        fontWeight: 'bold',
+        marginBottom: 30, 
+        marginHorizontal: 10
+    },
 });
 
 export default CommunityChat;
-
-
-
