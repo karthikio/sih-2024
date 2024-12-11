@@ -81,11 +81,11 @@ const Question = ({ navigation }) => {
   const [selectedCattle, setSelectedCattle] = useState(null);
 
   const questions = [
-    "Is the livestock showing signs of lethargy?",
-    "Is there any loss of appetite?",
-    "Are there any visible sores or lesions?",
-    "Is the animal experiencing difficulty in movement?",
-    "Is there abnormal discharge from the nose or eyes?",
+    "Does the animal seem tired or weak?",
+    "Has it stopped eating as much as usual?",
+    "Do you see any sores or wounds on its body?",
+    "Is it having trouble walking or moving?",
+    "Is there any unusual discharge from its nose or eyes?"
   ];
 
   const [answers, setAnswers] = useState(
@@ -120,21 +120,22 @@ const Question = ({ navigation }) => {
 
   useEffect(() => {
     const currentUser = auth.currentUser;
+  
     if (currentUser) {
       const cattleRef = collection(doc(db, "users", currentUser.uid), "cattle");
-
       const unsubscribe = onSnapshot(cattleRef, (querySnapshot) => {
         const fetchedCattle = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
         setCattle(fetchedCattle);
+
         if (fetchedCattle.length > 0) {
-          setSelectedCattle(fetchedCattle[0].id); // Default to the first cattle
+          setSelectedCattle((prevSelected) => prevSelected || fetchedCattle[0].id);
         }
       });
-
-      return () => unsubscribe(); // Clean up listener
+      return () => unsubscribe();
     }
   }, []);
 
@@ -147,17 +148,6 @@ const Question = ({ navigation }) => {
       >
       <Text style={styles.title}>Livestock Health Assessment</Text>
       {cattle ? 
-        <TouchableOpacity 
-        style={[
-          styles.continueButton, 
-        ]}
-        onPress={
-          () => {navigation.navigate("AddCattle")}
-        }
-      >
-        <Text style={styles.continueButtonText}>Add Cattle</Text>
-      </TouchableOpacity>
-      :
         <>  
         {/* Cattle Dropdown */}
         <View style={styles.dropdownContainer}>
@@ -168,12 +158,22 @@ const Question = ({ navigation }) => {
             style={styles.picker}
           >
             {cattle.map((c) => (
-              <Picker.Item key={c.id} label={c.breed} value={c.id} />
+              <Picker.Item key={c.id} label={`${c.breed} - ${c.age}yrs`} value={c.id} />
             ))}
           </Picker>
         </View>
         </>
-
+      :
+        <TouchableOpacity 
+        style={[
+          styles.continueButton, 
+        ]}
+        onPress={
+          () => {navigation.navigate("AddCattle")}
+        }
+      >
+        <Text style={styles.continueButtonText}>Add Cattle</Text>
+      </TouchableOpacity>
       }
 
         {questions.map((question, index) => (

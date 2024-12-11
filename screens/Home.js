@@ -105,7 +105,7 @@ const currentMonth = monthNames[new Date().getMonth()];
 
     const fetchReportCount = async (latitude, longitude) => {
       try {
-        const boundingBox = calculateBoundingBox(latitude, longitude, 50); // 5 km radius
+        const boundingBox = calculateBoundingBox(latitude, longitude, 30); // 5 km radius
   
         const reportsQuery = query(
           collection(db, "reports"),
@@ -165,7 +165,7 @@ const currentMonth = monthNames[new Date().getMonth()];
         <View style={styles.textContainer}>
           <Text style={styles.cardTitle}>Cattle Disease Reports</Text>
           <Text style={styles.cardMessage}>
-            There are <Text style={styles.countText}>{reportCount}</Text> reports of cattle diseases within a 50 km radius. Stay alert and take preventive measures.
+            There are <Text style={styles.countText}>{reportCount}</Text> reports of cattle diseases within a 30 km radius. Stay alert and take preventive measures.
           </Text>
         </View>
       </View> 
@@ -255,7 +255,9 @@ const currentMonth = monthNames[new Date().getMonth()];
       {/* Tips Section */}
     <Text style={styles.sectionTitle}>Tips for Plants and livestocks</Text>
     <View style={styles.tipsGrid}>
+
       <View style={styles.tipItem}>
+
         <Image
           source={require("../assets/images/crops.png")} // Replace with your image
           style={styles.tipImage}
@@ -263,6 +265,7 @@ const currentMonth = monthNames[new Date().getMonth()];
         <Text style={styles.tipText}>
         Get tips on soil, sunlight, and pruning for healthy, thriving plants.</Text>
       </View>
+
       <View style={styles.tipItem}>
         <Image
           source={require("../assets/icons/pesticide.png")} // Replace with your image

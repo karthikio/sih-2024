@@ -23,6 +23,9 @@ import AddCattle from "./screens/AddCattle";
 import VetRegister from "./screens/VetRegister";
 import ReportDetail from "./screens/ReportDetail";
 import Reports from "./screens/Reports";
+import PDFViewer from "./screens/PDFViewer";
+import PDFList from "./screens/PDFList";
+import MedicalReportScreen from "./screens/MedicalReportScreen";
 
 
 // Navigation Containers
@@ -214,10 +217,70 @@ const App = () => {
           headerTintColor: "#347928",
         }}
         />
-        <Stack.Screen name="ChatBot" component={ChatBot}/>
-        <Stack.Screen name="AddCattle" component={AddCattle} />
-        <Stack.Screen name="Reports" component={Reports} />
-        <Stack.Screen name="ReportDetail" component={ReportDetail} />
+        <Stack.Screen 
+        name="ChatBot" 
+        component={ChatBot}
+          options={{
+            headerTitle: "Report",
+            headerStyle: { backgroundColor: "#f8f8f8" },
+            headerTintColor: "#347928",
+          }}
+        />
+        <Stack.Screen 
+        name="AddCattle" 
+        component={AddCattle} 
+        options={{
+          headerTitle: "Add Cattle",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+        <Stack.Screen 
+        name="Reports" 
+        component={Reports} 
+        options={{
+          headerTitle: "Reports",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+        <Stack.Screen 
+        name="ReportDetail" 
+        component={ReportDetail}
+        options={{
+          headerTitle: "Report Detail",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+        <Stack.Screen 
+        name="PDFList" 
+        component={PDFList}
+        options={{
+          headerTitle: "Tips",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+         />
+        <Stack.Screen 
+        name="PDFViewer" 
+        component={PDFViewer} 
+        options={{
+          headerTitle: "Tips Detail",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+        <Stack.Screen 
+        name="MedicalReport" 
+        component={MedicalReportScreen}
+        options={{
+          headerTitle: "Cattle Report",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+          headerLeft: () => null,
+        }}
+        />
         </>
         )}
       </Stack.Navigator>

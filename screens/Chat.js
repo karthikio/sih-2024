@@ -10,7 +10,7 @@ import {
     Modal,
     TextInput,
     Keyboard,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
 import {
@@ -38,13 +38,13 @@ const CommunityChat = () => {
     const [imagePreview, setImagePreview] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    
 
     const user = auth.currentUser;
 
-    // Fetch chat messages with real-time updates
     useEffect(() => {
         const chatQuery = query(
-            collection(db, "CommunityChat"), 
+            collection(db, "CommunityChat"),
             orderBy("timestamp", "desc")
         );
         const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
@@ -64,26 +64,30 @@ const CommunityChat = () => {
             Alert.alert("Error", "Message or image cannot be empty.");
             return;
         }
-
+    
         setUploading(true);
-
+    
         try {
+            if (!user) {
+                Alert.alert("Error", "User not authenticated.");
+                setUploading(false);
+                return;
+            }
+    
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
-            const userName = userDoc.exists() 
-                ? userDoc.data().name || "Anonymous" 
+            const userName = userDoc.exists()
+                ? userDoc.data().name || "Anonymous"
                 : "Anonymous";
-
-            const messageData = {
-                message,
-                userId: user.uid,
+    
+            const replyData = {
+                id: Date.now().toString(), // Unique ID for the reply
                 userName,
-                timestamp: serverTimestamp(),
-                likes: 0,
-                replies: [],
-                parentId: replyingTo ? replyingTo.id : null,
+                message,
+                imageUrl: null,
+                timestamp: new Date(),
             };
-
+    
             if (imagePreview) {
                 const compressedImage = await ImageManipulator.manipulateAsync(
                     imagePreview,
@@ -94,22 +98,41 @@ const CommunityChat = () => {
                 const imageRef = ref(storage, imageName);
                 const imgResponse = await fetch(compressedImage.uri);
                 const imgBlob = await imgResponse.blob();
-
+    
                 await uploadBytes(imageRef, imgBlob);
                 const downloadUrl = await getDownloadURL(imageRef);
-                messageData.imageUrl = downloadUrl;
+                replyData.imageUrl = downloadUrl;
             }
-
-            await addDoc(collection(db, "CommunityChat"), messageData);
-
-            // Update parent message with reply if it's a reply
+    
             if (replyingTo) {
+                // Add to parent message's replies array
                 const parentDocRef = doc(db, "CommunityChat", replyingTo.id);
-                await updateDoc(parentDocRef, {
-                    replies: [...(replyingTo.replies || []), messageData],
-                });
+                const parentDoc = await getDoc(parentDocRef);
+    
+                if (parentDoc.exists()) {
+                    const currentReplies = parentDoc.data().replies || [];
+                    await updateDoc(parentDocRef, {
+                        replies: [...currentReplies, replyData],
+                    });
+                }
+            } else {
+                // Create a new message in CommunityChat
+                const messageData = {
+                    message,
+                    userId: user.uid,
+                    userName,
+                    timestamp: serverTimestamp(),
+                    likes: 0,
+                    replies: [],
+                };
+    
+                if (replyData.imageUrl) {
+                    messageData.imageUrl = replyData.imageUrl;
+                }
+    
+                await addDoc(collection(db, "CommunityChat"), messageData);
             }
-
+    
             setMessage("");
             setImagePreview(null);
             setReplyingTo(null);
@@ -117,7 +140,7 @@ const CommunityChat = () => {
             Keyboard.dismiss();
         } catch (error) {
             console.error("Error sending message:", error);
-            Alert.alert("Error", "Failed to send the message.");
+            Alert.alert("Error", `Failed to send message: ${error.message}`);
         } finally {
             setUploading(false);
         }
@@ -125,15 +148,40 @@ const CommunityChat = () => {
 
     const handleLike = async (messageId) => {
         try {
+            // Ensure user is authenticated
+            if (!user) {
+                Alert.alert("Error", "You must be logged in to like a message.");
+                return;
+            }
+    
             const messageRef = doc(db, "CommunityChat", messageId);
             const messageDoc = await getDoc(messageRef);
-            const currentLikes = messageDoc.data().likes || 0;
-            
+    
+            // Check if the message exists
+            if (!messageDoc.exists()) {
+                Alert.alert("Error", "Message not found.");
+                return;
+            }
+    
+            const messageData = messageDoc.data();
+            const currentLikes = messageData.likes || 0;
+            const likedUsers = messageData.likedUsers || [];
+    
+            // Check if user has already liked the message
+            if (likedUsers.includes(user.uid)) {
+                Alert.alert("Oops", "You have already liked this message.");
+                return;
+            }
+    
+            // Update the document with new like count and liked users
             await updateDoc(messageRef, {
                 likes: currentLikes + 1,
+                likedUsers: [...likedUsers, user.uid]
             });
+    
         } catch (error) {
             console.error("Error liking message:", error);
+            Alert.alert("Error", "Failed to like the message. Please try again.");
         }
     };
 
@@ -166,27 +214,32 @@ const CommunityChat = () => {
         <View style={styles.messageContainer}>
             <Text style={styles.userName}>{item.userName}</Text>
             <Text style={styles.timestamp}>
-                {item.timestamp 
-                    ? (isToday(new Date(item.timestamp?.toMillis()))
-                        ? `Today at ${format(new Date(item.timestamp.toMillis()), "h:mm a")}`
-                        : format(new Date(item.timestamp.toMillis()), "MMM d, yyyy 'at' h:mm a"))
-                    : "Just now"
-                }
+                {item.timestamp
+                    ? isToday(new Date(item.timestamp?.toMillis()))
+                        ? `Today at ${format(
+                              new Date(item.timestamp.toMillis()),
+                              "h:mm a"
+                          )}`
+                        : format(
+                              new Date(item.timestamp.toMillis()),
+                              "MMM d, yyyy 'at' h:mm a"
+                          )
+                    : "Just now"}
             </Text>
             {item.imageUrl && (
                 <Image source={{ uri: item.imageUrl }} style={styles.image} />
             )}
             {item.message && <Text style={styles.message}>{item.message}</Text>}
-            
+
             <View style={styles.actionContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.likeButton}
                     onPress={() => handleLike(item.id)}
                 >
                     <Ionicons name="heart-outline" size={20} color="#347928" />
                     <Text style={styles.likeCount}>{item.likes || 0}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.replyButton}
                     onPress={() => {
                         setReplyingTo(item);
@@ -200,19 +253,19 @@ const CommunityChat = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Render Replies */}
-            {item.replies && item.replies.map((reply, index) => (
-                <View key={index} style={styles.replyContainer}>
-                    <Text style={styles.replyUserName}>{reply.userName}</Text>
-                    <Text style={styles.replyMessage}>{reply.message}</Text>
-                    {reply.imageUrl && (
-                        <Image 
-                            source={{ uri: reply.imageUrl }} 
-                            style={styles.replyImage} 
-                        />
-                    )}
-                </View>
-            ))}
+            {item.replies &&
+                item.replies.map((reply, index) => (
+                    <View key={index} style={styles.replyContainer}>
+                        <Text style={styles.replyUserName}>{reply.userName}</Text>
+                        <Text style={styles.replyMessage}>{reply.message}</Text>
+                        {reply.imageUrl && (
+                            <Image
+                                source={{ uri: reply.imageUrl }}
+                                style={styles.replyImage}
+                            />
+                        )}
+                    </View>
+                ))}
         </View>
     );
 

@@ -20,7 +20,7 @@ import axios from "axios";
 import { addDoc, collection } from 'firebase/firestore';
 
 
-const ChatBot = ({route}) => {
+const ChatBot = ({route, navigation}) => {
   const { answers = [] } = route.params || {};
 
   const API_KEY = "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"; // Replace with your actual API key
@@ -103,13 +103,19 @@ const ChatBot = ({route}) => {
             - severity: string
             - remedy: string
             
-            If no clear disease is identified, set disease_name to null and is_disease_detected to false.
-        
-            If the uploaded image not relevant to livestock or body part of livestocks (e.g., contains non-livestock objects or is unrelated), respond with the following JSON:
-            {
-              "error": "irrelevant_image",
-              "message": "The uploaded image does not appear to be related to livestock. Please upload a relevant image."
-            }`
+                  Scenarios:
+            1. If the uploaded image is irrelevant (not livestock-related), respond with:
+              {
+                "error": "irrelevant_image",
+                "message": "The uploaded image does not appear to be related to livestock. Please upload a relevant image."
+              }
+            2. If the livestock appears healthy, respond with:
+              {
+                "is_disease_detected": false,
+                "message": "The livestock appears healthy based on the provided images and symptoms."
+              }
+            3. If a disease is detected, provide full details as per the structure above.
+              `
           },
           { 
             role: "user", 
@@ -157,8 +163,9 @@ const ChatBot = ({route}) => {
         return;
       }
 
+
       if (responseData.is_disease_detected) {
-      await addDoc(collection(db, "reports"), {
+      const docRef = await addDoc(collection(db, "reports"), {
         userId: user.uid,
         userName: user.displayName || "Anonymous",
         latitude,
@@ -172,8 +179,14 @@ const ChatBot = ({route}) => {
         remedy: responseData.remedy,
         createdAt: new Date(),
       });
-      Alert.alert("Success", "Report saved successfully.");
-    } else {
+
+      if (responseData){
+        navigation.navigate("MedicalReport", { report: responseData });
+      }
+
+    }else if(responseData.error == "irrelevant_image") {
+      Alert.alert("Irrelevant Image", "The uploaded image does not appear to be related to livestock. Please upload a relevant image.");
+    }else if(responseData.is_disease_detected == false){
       Alert.alert("No Disease Detected", "The system did not detect any disease.");
     }
 
@@ -196,6 +209,7 @@ const ChatBot = ({route}) => {
         contentContainerStyle={styles.scrollViewContent}
         keyboardShouldPersistTaps="handled"
       >
+
         <TextInput
           style={styles.input}
           placeholder="Enter disease or symptoms"
@@ -209,10 +223,12 @@ const ChatBot = ({route}) => {
         {[0, 1, 2].map((index) => (
           <View key={index} style={styles.imageSection}>
             <View style={styles.imageUploadContainer}>
-              <Button 
-                title={images[index] ? `Change Image ${index + 1}` : `Upload Image ${index + 1}`} 
-                onPress={() => pickImage(index)} 
-              />
+              <TouchableOpacity 
+              onPress={() => pickImage(index)}
+              style={styles.addImageButton}
+              >
+                <Text style={styles.addImageText}>{images[index] ? `Change Image ${index + 1}` : `Upload Image ${index + 1}`} </Text>
+              </TouchableOpacity>
               
               {images[index] && (
                 <TouchableOpacity 
@@ -233,63 +249,9 @@ const ChatBot = ({route}) => {
           </View>
         ))}
 
-        <Button 
-          title={isLoading ? "Processing..." : "Submit"} 
-          onPress={handleChat} 
-          disabled={isLoading} 
-        />
-<View style={styles.responseContainer}>
-  <Text style={styles.responseTitle}>AI Assistant Response:</Text>
-  <ScrollView
-    style={styles.responseScrollView}
-    contentContainerStyle={styles.responseScrollViewContent}
-  >
-    {isLoading ? (
-      <Text style={styles.responseText}>Processing your request...</Text>
-    ) : response ? (
-      typeof response === "object" ? (
-        <View>
-          {response.is_disease_detected ? (
-            <>
-              <Text style={styles.responseText}>
-                <Text style={{ fontWeight: "bold" }}>Disease Name:</Text> {response.disease_name || "N/A"}
-              </Text>
-              <Text style={styles.responseText}>
-                <Text style={{ fontWeight: "bold" }}>Severity:</Text> {response.severity || "Unknown"}
-              </Text>
-              <Text style={styles.responseText}>
-                <Text style={{ fontWeight: "bold" }}>Remedy:</Text> {response.remedy || "N/A"}
-              </Text>
-              <Text style={styles.responseText}>
-                <Text style={{ fontWeight: "bold" }}>Additional Info:</Text> {response.additional_info || "N/A"}
-              </Text>
-              {response.prevention_steps && response.prevention_steps.length > 0 && (
-                <Text style={styles.responseText}>
-                  <Text style={{ fontWeight: "bold" }}>Prevention Steps:</Text>
-                  {"\n"}{response.prevention_steps.map((step, index) => `${index + 1}. ${step}`).join("\n")}
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text style={styles.responseText}>
-              The system did not detect any disease. Your livestock appears to be healthy. For more information or concerns, please consult a nearby veterinarian.
-            </Text>
-          )}
-          {response.error && (
-            <Text style={styles.responseText}>
-              <Text style={{ fontWeight: "bold", color: "red" }}>Error:</Text> {response.error}
-              {"\n"}{response.message}
-            </Text>
-          )}
-        </View>
-      ) : (
-        <Text style={styles.responseText}>{response}</Text>
-      )
-    ) : (
-      <Text style={styles.responseText}>Your medical AI assistant is ready to help you!</Text>
-    )}
-  </ScrollView>
-</View>
+        <TouchableOpacity disabled={isLoading} style={styles.btn} onPress={handleChat}>
+          <Text style={styles.btnText}>{isLoading ? "Processing..." : "Submit"}</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -344,6 +306,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  addImageButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginLeft: 10,
+    shadowColor: "#000",
+    elevation: 2,
+    borderColor: "#333333",
+    borderWidth: 1
+  },
+  addImageText: {
+    color: "#333333",
+    fontWeight: "600",
+    fontSize: 14,
+  },
   removeImageButton: {
     backgroundColor: "#e63946",
     paddingVertical: 10,
@@ -360,6 +337,21 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 14,
+  },
+  btn: {
+    height: 44,
+    width: "100%",
+    borderRadius: 30,
+    backgroundColor: "#FCCD2A",
+    marginTop: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  btnText: {
+    textAlign: "center",
+    color: "#333333",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   responseContainer: {
     marginTop: 20,
