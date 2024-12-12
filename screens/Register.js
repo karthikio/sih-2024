@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Picker } from '@react-native-picker/picker';
 
 const Register = ({ navigation }) => {
     const [name, setName] = useState('');
@@ -24,6 +25,7 @@ const Register = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [language, setLanguage] = useState('english');
     const handleRegister = async () => {
         if (!name.trim() || !email.trim() || !password.trim()) {
             Alert.alert('Error', 'All fields are required.');
@@ -45,6 +47,7 @@ const Register = ({ navigation }) => {
                 email: email,
                 bio: '',
                 location: '',
+                language: language,
                 dateJoined: new Date(), // Add the dateJoined field
             });
     
@@ -100,6 +103,17 @@ const Register = ({ navigation }) => {
                             />
                         </TouchableOpacity>
                     </View>
+
+                    <Text style={styles.label}>Preferred Language:</Text>
+                    <Picker
+                        selectedValue={language}
+                        style={styles.picker}
+                        onValueChange={(itemValue) => setLanguage(itemValue)}
+                    >
+                        <Picker.Item label="English" value="english" />
+                        <Picker.Item label="हिन्दी" value="hindi" />
+                        <Picker.Item label="தமிழ்" value="tamil" />
+                    </Picker>
 
                     <TouchableOpacity
                         style={[
@@ -181,6 +195,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
         elevation: 5,
+        marginBottom: 30
     },
     registerButtonText: {
         color: '#fff',
@@ -192,6 +207,24 @@ const styles = StyleSheet.create({
         color: '#333',
         marginTop: 10,
         textDecorationLine: 'underline',
+    },
+    picker: {
+        width: '100%',
+        backgroundColor: '#fff',
+        height: 120, // Adjust this value to reduce the height
+        paddingHorizontal: 10,
+        borderRadius: 8,
+        marginVertical: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        justifyContent: 'center', 
+    },
+    label: {
+        fontSize: 16,
+        marginVertical: 10,
+        color: '#333',
+        width: "100%", 
+        alignItems: "left"
     },
 });
 

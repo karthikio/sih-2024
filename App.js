@@ -5,7 +5,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { auth } from "./firebaseConfig";
+import { auth, db } from "./firebaseConfig";
+import { doc, onSnapshot } from "firebase/firestore";
 
 // Import your screens
 import Welcome from "./screens/Welcome";
@@ -27,6 +28,10 @@ import PDFViewer from "./screens/PDFViewer";
 import PDFList from "./screens/PDFList";
 import MedicalReportScreen from "./screens/MedicalReportScreen";
 
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n';
+import DataVisual from "./screens/DataVisual";
+import MyReports from "./screens/MyReports";
 
 // Navigation Containers
 const Tab = createBottomTabNavigator();
@@ -87,7 +92,7 @@ const TabNavigator = () => (
       }}
     />
 
-    <Tab.Screen
+    {/* <Tab.Screen
       name="Detection"
       component={Detection}
       options={{
@@ -100,7 +105,7 @@ const TabNavigator = () => (
           />
         ),
       }}
-    />
+    /> */}
 
 
     <Tab.Screen
@@ -134,6 +139,13 @@ const TabNavigator = () => (
   </Tab.Navigator>
 );
 
+
+const languageMap = {
+  english: 'en',
+  tamil: 'ta',
+  hindi: 'hi',
+};
+
 const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -152,14 +164,46 @@ const App = () => {
         console.error("Error checking first launch:", error);
       }
     };
-
-    checkFirstLaunch();
-
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+  
+    const fetchUserLanguage = async (user) => {
+      try {
+        if (user) {
+          const userDocRef = doc(db, "users", user.uid);
+          const unsubscribe = onSnapshot(userDocRef, (userDoc) => {
+            if (userDoc.exists()) {
+              const userLanguage = userDoc.data()?.language || "english"; // Default to "english"
+              const languageCode = languageMap[userLanguage.toLowerCase()] || "en"; // Map to language code
+              i18n.changeLanguage(languageCode);
+            } else {
+              console.log("User document does not exist.");
+            }
+          });
+          return () => unsubscribe();
+        } else {
+          console.log("No authenticated user to fetch language.");
+        }
+      } catch (error) {
+        console.error("Error fetching user language:", error);
+      }
+    };
+  
+    // Set up auth state listener
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       setIsLoggedIn(!!user);
+  
+      // Fetch user language when auth state changes
+      if (user) {
+        await fetchUserLanguage(user);
+      }
     });
-
-    return () => unsubscribe();
+  
+    // Run first-launch check
+    checkFirstLaunch();
+  
+    return () => {
+      // Cleanup auth listener
+      unsubscribeAuth();
+    };
   }, []);
 
   if (isFirstLaunch === null) {
@@ -176,6 +220,7 @@ const App = () => {
   }
 
   return (
+    <I18nextProvider i18n={i18n}>
     <NavigationContainer>
       <Stack.Navigator>
         {!isLoggedIn ? (
@@ -190,7 +235,13 @@ const App = () => {
               component={Register}
               options={{ headerShown: false }}
             />
-            <Stack.Screen name="VetRegister" component={VetRegister} />
+            <Stack.Screen name="VetRegister" component={VetRegister}
+            options={{
+              headerTitle: "Veternaian",
+              headerStyle: { backgroundColor: "#f8f8f8" },
+              headerTintColor: "#347928",
+            }}
+            />
           </>
         ) : (
           <>
@@ -253,7 +304,7 @@ const App = () => {
           headerTintColor: "#347928",
         }}
         />
-        <Stack.Screen 
+        {/* <Stack.Screen 
         name="PDFList" 
         component={PDFList}
         options={{
@@ -261,8 +312,8 @@ const App = () => {
           headerStyle: { backgroundColor: "#f8f8f8" },
           headerTintColor: "#347928",
         }}
-         />
-        <Stack.Screen 
+         /> */}
+        {/* <Stack.Screen 
         name="PDFViewer" 
         component={PDFViewer} 
         options={{
@@ -270,7 +321,7 @@ const App = () => {
           headerStyle: { backgroundColor: "#f8f8f8" },
           headerTintColor: "#347928",
         }}
-        />
+        /> */}
         <Stack.Screen 
         name="MedicalReport" 
         component={MedicalReportScreen}
@@ -281,10 +332,39 @@ const App = () => {
           headerLeft: () => null,
         }}
         />
+        <Stack.Screen 
+        name="DataVisual" 
+        component={DataVisual}
+        options={{
+          headerTitle: "Data Visualiaztion",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+         <Stack.Screen 
+        name="Detection" 
+        component={Detection}
+        options={{
+          headerTitle: "Crop Detection",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
+
+      <Stack.Screen 
+        name="MyReports" 
+        component={MyReports}
+        options={{
+          headerTitle: "My Reports",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
         </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </I18nextProvider>
   );
 };
 

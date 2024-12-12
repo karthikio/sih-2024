@@ -47,6 +47,18 @@ const AddCattle = ({ navigation }) => {
       "Kanni Aadu",
       "Kodi Aadu",
     ],
+    buffalo: [
+      "Murrah",
+      "Surti",
+      "Jaffarabadi",
+      "Mehsana",
+      "Nagpuri",
+      "Banni",
+      "Nili-Ravi",
+      "Pandharpuri",
+      "Toda",
+      "Godavari"
+    ]
   };
 
   const handleAddCattle = async () => {
@@ -87,7 +99,7 @@ const AddCattle = ({ navigation }) => {
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={styles.container}>
         <View style={styles.field}>
-          <Text style={styles.label}>Cattle Type</Text>
+          <Text style={styles.label}>Livestock Type</Text>
           <Picker
             selectedValue={cattleType}
             style={styles.picker}
@@ -96,8 +108,9 @@ const AddCattle = ({ navigation }) => {
               setBreed(""); // Reset breed when cattle type changes
             }}
           >
-            <Picker.Item label="🐄 Cow" value="cow" />
+            <Picker.Item label="🐄 Cattle" value="cow" />
             <Picker.Item label="🐐 Goat" value="goat" />
+            <Picker.Item label="🐃 Buffalo" value="buffalo" />
           </Picker>
         </View>
 

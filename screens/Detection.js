@@ -1,18 +1,21 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from 'react-i18next';
+
 
 const Detection = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
       {/* Page Title */}
-      <Text style={styles.title}>Detection plants, livestocks</Text>
+      <Text style={styles.title}>{t('detection.detectionTitle')}</Text>
       
       {/* Info Card */}
       <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>How to Detect Infections</Text>
+        <Text style={styles.infoTitle}>{t('detection.info')}</Text>
         <Text style={styles.infoText}>
           1. Inspect plants for spots, discoloration, or unusual patterns.{"\n"}
           2. Check livestock for lethargy, unusual behavior, or physical symptoms.{"\n"}
@@ -25,7 +28,7 @@ const Detection = () => {
         style={styles.button}
         onPress={() => navigation.navigate("Scan")}
       >
-        <Text style={styles.buttonText}>Open Scan</Text>
+        <Text style={styles.buttonText}>{t('detection.scan')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -38,13 +41,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f8f8",
     padding: 16,
-    paddingTop: 60
+    paddingTop: 20
   },
   title: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#333333",
-    marginTop: 40,
     marginBottom: 20,
     width: "100%",
     textAlign: "left",

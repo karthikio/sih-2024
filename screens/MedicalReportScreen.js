@@ -12,11 +12,11 @@ const MedicalReportScreen = ({ route, navigation}) => {
            <Text style={styles.text}>
             </Text>
             <Text style={styles.text}>
-              <Text style={styles.label}>Disease Name:</Text> {report.disease_name || "N/A"}
+              <Text style={styles.label}>{report.disease_name || "N/A"}</Text> 
             </Text>
-            <Text style={styles.text}>
+            {/* <Text style={styles.text}>
               <Text style={styles.label}>Severity:</Text> {report.severity || "Unknown"}
-            </Text>
+            </Text> */}
             <Text style={styles.text}>
               <Text style={styles.label}>Remedy:</Text> {report.remedy || "N/A"}
             </Text>

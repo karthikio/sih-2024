@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useDebugValue, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,12 @@ import { collection, query, where, getDocs, doc, onSnapshot } from "firebase/fir
 import { db, auth } from "../firebaseConfig"; // Import your Firebase config
 import { FontAwesome } from "@expo/vector-icons";
 
+import { useTranslation } from 'react-i18next';
+
+
 const Home = ({ navigation }) => {
+  const { t } = useTranslation();
+
   const [location, setLocation] = useState(null);
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +38,7 @@ const Home = ({ navigation }) => {
 ];
 const currentMonth = monthNames[new Date().getMonth()];
 
-  const API_KEY = "6ecc21b866f6451785f4f772788d75a9"; // Replace with a valid OpenWeather API key
+  const API_KEY = "6ecc21b866f6451785f4f772788d75a9"; 
   const GPT_API_KEY = "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"; // Replace with your ChatGPT API key
   
   // const API_KEY = "api_key"; 
@@ -90,10 +95,11 @@ const currentMonth = monthNames[new Date().getMonth()];
 
 
         const locationName = weatherResponse.data.name;
-        const query = `What are the major diseases affecting livestock in ${locationName} and nearby area, during ${currentMonth}? Provide the disease names in a bullet-point format only, without any introduction, explanation, or summary.`;
+        const query = `What are the major diseases affecting livestock in ${locationName} and nearby area, during ${currentMonth}? Provide the disease names in a bullet-point format only, without any introduction, explanation, or summary. Don't show disease outside India.`;
         sendMessage(
           query,
-          "You are an expert in agricultural and veterinary sciences. Always respond with a concise list in bullet-point format. No introduction, no summaries, suggestions."
+          "You are an expert in agricultural and veterinary sciences. Always respond with a concise list in bullet-point format. No introduction, no summaries, suggestions.", 
+          userData?.language
         );
        } catch (error) {
         console.error("Error fetching weather:", error.response?.data || error.message);
@@ -105,7 +111,7 @@ const currentMonth = monthNames[new Date().getMonth()];
 
     const fetchReportCount = async (latitude, longitude) => {
       try {
-        const boundingBox = calculateBoundingBox(latitude, longitude, 30); // 5 km radius
+        const boundingBox = calculateBoundingBox(latitude, longitude, 300); // 30 km radius
   
         const reportsQuery = query(
           collection(db, "reports"),
@@ -147,7 +153,8 @@ const currentMonth = monthNames[new Date().getMonth()];
     };
 
     fetchWeather();
-  }, []);
+    //refresh while language change
+  }, [userData?.language]);
 
   useEffect(() => {
     if (response) {
@@ -156,7 +163,11 @@ const currentMonth = monthNames[new Date().getMonth()];
   }, [response]);
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScrollView contentContainerStyle={userData?.vet ?  styles.scrollContentVet : styles.scrollContent}>
+      <Text style={styles.appTitle}>GreenEye {userData?.vet ? "🩺" : "🌾"}</Text>
+
+      <Text style={styles.hometitle}>{t('home.welcome')}</Text>
+
       { reportCount>5 ?
       <View style={styles.cardContainer}>
         <View style={styles.iconContainer}>
@@ -200,31 +211,41 @@ const currentMonth = monthNames[new Date().getMonth()];
       </View>
 
       {/* Detection container */}
-      <Text style={styles.sectionTitle}>Diagnosis Report</Text>
+      <Text style={styles.sectionTitle}>{t('home.diagnosisTitle')}</Text>
       <View style={styles.detectSection}>
          <View style={styles.detectContainer}>
           <View style={styles.detectImgContainer}>
             <Image
               style={styles.detectIcons}
-              source={require("../assets/icons/scan.png")}
+              source={
+                userData?.vet
+                  ? require('../assets/icons/health-report.png')
+                  : require('../assets/icons/scan.png')
+              }    
             />
-              <Text style={styles.imageText}>Take picture</Text>
+              <Text style={styles.imageText}>{userData?.vet ? "See Reports" : "Take picture"}</Text>
           </View>
 
+          {userData?.vet ?? 
+          
           <View style={styles.detectImgContainer}>
             <Image
               style={styles.detectIcons}
-              source={require("../assets/icons/report.png")}
-            />
+              source={require('../assets/icons/report.png')}         
+               />
             <Text style={styles.imageText}>View Report</Text>
           </View>
+        }
 
           <View style={styles.detectImgContainer}>
             <Image
               style={styles.detectIcons}
-              source={require("../assets/icons/medicne.png")}
-            />
-            <Text style={styles.imageText}>Suggestions</Text>
+              source={
+                userData?.vet
+                  ? require('../assets/icons/appointment.png')
+                  : require('../assets/icons/medicne.png')
+              }              />
+            <Text style={styles.imageText}>{userData?.vet ? "Give Appointment" : "Suggestions"}</Text>
           </View>
         </View>
         {userData?.vet ?
@@ -239,7 +260,7 @@ const currentMonth = monthNames[new Date().getMonth()];
       </View>
 
       {/* AI Suggestions */}
-      <Text style={styles.sectionTitle}>Livestock Disease Suggestions</Text>
+      <Text style={styles.sectionTitle}>{t('home.diseaseTitle')}</Text>
       <View style={styles.aiCard}>
         {aiLoading ? (
           <ActivityIndicator size="small" color="#333333" />
@@ -252,52 +273,65 @@ const currentMonth = monthNames[new Date().getMonth()];
         )}
       </View>
 
+
+
+      {/* {userData?.vet ??   */}
+      <>
       {/* Tips Section */}
-    <Text style={styles.sectionTitle}>Tips for Plants and livestocks</Text>
-    <View style={styles.tipsGrid}>
+        <Text style={styles.sectionTitle}>{t('home.tipsTitle')}</Text>
+        <View style={styles.tipsGrid}>
+        <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("Detection")}>
+            <Image
+              source={require("../assets/icons/irrigation.png")} // Replace with your image
+              style={styles.tipImage}
+            />
+            <Text style={styles.tipText}>
+            {t('home.tipsBot')}</Text>
+          </TouchableOpacity>
 
-      <View style={styles.tipItem}>
+          <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("MyReports")}>
+            <Image
+              source={require("../assets/icons/cow.png")} // Replace with your image
+              style={styles.tipImage}
+            />
+            <Text style={styles.tipText}>
+            {t('home.tipsCrops')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tipItem}>
 
-        <Image
-          source={require("../assets/images/crops.png")} // Replace with your image
-          style={styles.tipImage}
-        />
-        <Text style={styles.tipText}>
-        Get tips on soil, sunlight, and pruning for healthy, thriving plants.</Text>
-      </View>
-
-      <View style={styles.tipItem}>
-        <Image
-          source={require("../assets/icons/pesticide.png")} // Replace with your image
-          style={styles.tipImage}
-        />
-        <Text style={styles.tipText}>
-        Explore safe, eco-friendly ways to protect your crops from pests.</Text>
-      </View>
-      <View style={styles.tipItem}>
-        <Image
-          source={require("../assets/icons/irrigation.png")} // Replace with your image
-          style={styles.tipImage}
-        />
-        <Text style={styles.tipText}>
-        Learn efficient watering techniques to boost crops and save water.</Text>
-      </View>
-      <View style={styles.tipItem}>
-        <Image
-          source={require("../assets/icons/cow.png")} // Replace with your image
-          style={styles.tipImage}
-        />
-        <Text style={styles.tipText}>
-        Keep your animals healthy with feeding, care, and vaccination tips.</Text>
-      </View>
-    </View>
-
+            <Image
+              source={require("../assets/icons/folder.png")} // Replace with your image
+              style={styles.tipImage}
+            />
+            <Text style={styles.tipText}>
+            {t('home.tipsLivestocks')}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("DataVisual")}>
+            <Image
+              source={require("../assets/icons/graph.png")} // Replace with your image
+              style={styles.tipImage}
+            />
+            <Text style={styles.tipText}>
+            {t('home.tipsChart')}</Text>
+          </TouchableOpacity>
+        </View>
+      </>
+      {/* } */}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    padding: 20,
+    paddingTop: 80,
+  },
+  scrollContentVet:{
+    backgroundColor: "#FFFBE6",
     flexGrow: 1,
     justifyContent: "flex-start",
     alignItems: "center",
@@ -332,14 +366,6 @@ const styles = StyleSheet.create({
     color: "#333",
     flexWrap: "wrap",
   },
-    scrollContent: {
-    flexGrow: 1,
-    justifyContent: "flex-start",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 20,
-    paddingTop: 80,
-  },
   loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
@@ -352,6 +378,14 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     width: "100%",
   },
+  hometitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333333",
+    marginVertical: 10,
+    width: "100%",
+    textAlign: "left",
+  },
   logo: {
     width: 40,
     height: 40,
@@ -361,6 +395,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "900",
     color: "#347928",
+    width: "100%",
+    textAlign: "left"
   },
   weatherCard: {
     padding: 10,
@@ -526,6 +562,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#ff5722",
   },
+  analysisContainer: {
+    width: "100%", 
+    backgroundColor: "#f5f6f7", 
+    flexDirection: "row", 
+    alignItems: "center"
+  }
 });
 
 export default Home;
+
+
+
+
+
+

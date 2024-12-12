@@ -30,8 +30,12 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from 'react-i18next';
+
 
 const CommunityChat = () => {
+    const { t } = useTranslation();
+
     const [chat, setChat] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [message, setMessage] = useState("");
@@ -271,7 +275,7 @@ const CommunityChat = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.sectionTitle}>Community Chat</Text>
+            <Text style={styles.sectionTitle}>{t('community.title')}</Text>
             <FlatList
                 data={chat}
                 keyExtractor={(item) => item.id}

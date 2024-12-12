@@ -64,13 +64,15 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   StyleSheet, 
-  ScrollView 
+  ScrollView, 
+  TextInput
 } from 'react-native';
 import { Picker } from "@react-native-picker/picker";
 import { auth, db} from '../firebaseConfig';
@@ -79,13 +81,25 @@ import { collection, doc, onSnapshot } from 'firebase/firestore';
 const Question = ({ navigation }) => {
   const [cattle, setCattle] = useState([]);
   const [selectedCattle, setSelectedCattle] = useState(null);
+    const [query, setQuery] = useState("");
+
 
   const questions = [
-    "Does the animal seem tired or weak?",
-    "Has it stopped eating as much as usual?",
-    "Do you see any sores or wounds on its body?",
-    "Is it having trouble walking or moving?",
-    "Is there any unusual discharge from its nose or eyes?"
+    "Diarrhea: Have you noticed any signs of diarrhea (chronic or bloody) in your cattle?",
+    "Weight Loss: Are any of your cattle losing weight despite having a normal appetite?",
+    "Coat Condition: Does your cattle have a poor or unhealthy coat condition?",
+    "Milk Production: Has there been a noticeable reduction in your cattle's milk production?",
+    "Fever: Is your cattle showing signs of fever or elevated body temperature?", 
+    "Anemia: Do your cattle have pale gums or appear weak and fatigued?", 
+    "Lymph Nodes: Are there any visible swellings in the lymph nodes of your cattle?", 
+    "Appetite Loss: Has your cattle recently shown a loss of appetite or reduced interest in eating?", 
+    "Straining: Have you noticed your cattle straining during defecation or showing signs of discomfort?", 
+    "Dehydration: Does your cattle show signs of dehydration, such as sunken eyes or a dry nose?", 
+    "Abortion: Has your pregnant cattle experienced abortion recently?", 
+    "Neurological Symptoms: Have you observed any neurological symptoms like incoordination or abnormal behavior in your cattle?", 
+    "Coordination Issues: Does your cattle lack coordination in movement or appear clumsy?", 
+    "Muscle Tremors: Does your cattle show muscle tremors or sensitivity to sound?", 
+    "Activity Level: Is your cattle behaving actively and alertly, or does it seem lethargic?", 
   ];
 
   const [answers, setAnswers] = useState(
@@ -103,7 +117,7 @@ const Question = ({ navigation }) => {
   };
 
   const handleContinue = () => {
-    if (isAllQuestionsAnswered()) {
+    // if (isAllQuestionsAnswered()) {
       const formattedAnswers = questions.map((question, index) => ({
         question,
         answer: answers[index]
@@ -114,8 +128,10 @@ const Question = ({ navigation }) => {
       navigation.navigate("ChatBot", {
         answers: formattedAnswers,
         cattle: selectedCattleData?.id,
+        livestockType: selectedCattleData?.cattle, 
+        input: query
       });    
-    }
+    // }
   };
 
   useEffect(() => {
@@ -147,18 +163,18 @@ const Question = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
       <Text style={styles.title}>Livestock Health Assessment</Text>
-      {cattle ? 
+      {cattle.length ? 
         <>  
         {/* Cattle Dropdown */}
+        <Text style={styles.label}>Select your Cattle:</Text>
         <View style={styles.dropdownContainer}>
-          <Text style={styles.label}>Select your Cattle:</Text>
           <Picker
             selectedValue={selectedCattle}
             onValueChange={(itemValue) => setSelectedCattle(itemValue)}
             style={styles.picker}
           >
             {cattle.map((c) => (
-              <Picker.Item key={c.id} label={`${c.breed} - ${c.age}yrs`} value={c.id} />
+              <Picker.Item key={c.id} label={`${c.breed} - ${c.age}yrs ${c.cattle}`} value={c.id} />
             ))}
           </Picker>
         </View>
@@ -198,17 +214,33 @@ const Question = ({ navigation }) => {
               >
                 <Text style={styles.buttonText}>No</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.answerButton, answers[index] === 'Not Sure' && styles.selectedButton]}
+                onPress={() => updateAnswer(index, 'Not Sure')}
+              >
+                <Text style={styles.buttonText}>Not Sure</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ))}
+
+        <TextInput 
+          style={styles.input}
+          placeholder="Enter disease or symptoms"
+          value={query}
+          onChangeText={(text) => setQuery(text)}
+          multiline={true}
+          numberOfLines={3}
+        /> 
         
         <TouchableOpacity 
           style={[
             styles.continueButton, 
-            !isAllQuestionsAnswered() && styles.disabledButton
+            // !isAllQuestionsAnswered() && styles.disabledButton
           ]}
           onPress={handleContinue}
-          disabled={!isAllQuestionsAnswered()}
+          // disabled={!isAllQuestionsAnswered()}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
@@ -283,6 +315,29 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dropdownContainer:{
+    borderColor: "#cccccc", 
+    borderWidth: 1,
+    borderRadius: 10, 
+    marginBottom: 10
+  }, 
+  input: {
+    height: 120,
+    borderColor: "#d1d5db",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    textAlignVertical: "top",
+    marginBottom: 20,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+    fontSize: 16,
+    color: "#333",
   },
 });
 

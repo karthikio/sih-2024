@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 const pdfFiles = [
-  { id: '1', name: 'Document 1', uri: require('../assets/pdfs/Anthrax.pdf') },
+  // { id: '1', name: 'Document 1', uri: require('../assets/pdfs/cow/Anthrax.pdf') },
   // { id: '2', name: 'Document 2', uri: require('./assets/pdfs/Black Quarter(BQ).pdf') },
   // { id: '3', name: 'Document 3', uri: require('./assets/pdfs/Bovine Viral Diarrhoea (BVD).pdf') },
   // { id: '4', name: 'Document 4', uri: require('./assets/pdfs/Gastrointestinal parasitism.pdf') },

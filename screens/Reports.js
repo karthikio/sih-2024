@@ -1,21 +1,38 @@
 import React from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { auth, db } from "../firebaseConfig";
+import { useState, useEffect } from "react";
+import { collection } from "firebase/firestore";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Reports = ({ route, navigation }) => {
-  const { reports } = route.params; // Access the reports passed from the previous screen
+  const { reports } = route.params; 
 
   const renderReportItem = ({ item }) => (
     <TouchableOpacity
       style={styles.reportItem}
       onPress={() => navigation.navigate("ReportDetail", { report: item })}
     >
+      <Text style={styles.reportLocation}>
+        # {item.id}
+      </Text>
       <Text style={styles.reportTitle}>{item.disease_name}</Text>
       <Text style={styles.reportSubtitle}>
-        Severity: {item.severity} | Detected: {item.is_disease_detected ? "Yes" : "No"}
+        Detected: {item.is_disease_detected ? "Yes" : "No"}
       </Text>
       <Text style={styles.reportLocation}>
-        Location: {item.latitude.toFixed(2)}, {item.longitude.toFixed(2)}
+        {Date(item.createdAt)}
       </Text>
+      
+      {item.approval ?
+      <>
+      <View style={styles.circle}>
+        <Icon name="check-circle" size={30} color="green" />
+      </View>
+      </>
+      :
+      <View styles={styles.circle}></View>
+      }
     </TouchableOpacity>
   );
 

@@ -6,7 +6,11 @@ const useChatBot = (apiKey, model = "gpt-4") => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const sendMessage = async (userMessage, systemPrompt = "You are a helpful assistant.") => {
+  const sendMessage = async (
+    userMessage, 
+    systemPrompt = "You are a helpful assistant.", 
+    language = "english"
+  ) => {
     setIsLoading(true);
     setError(null);
 
@@ -14,7 +18,10 @@ const useChatBot = (apiKey, model = "gpt-4") => {
       const payload = {
         model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { 
+            role: "system",
+            content: `${systemPrompt} Respond in ${language}.`, 
+          },
           { role: "user", content: userMessage },
         ],
         max_tokens: 150,
