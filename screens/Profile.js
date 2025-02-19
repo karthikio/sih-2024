@@ -13,8 +13,12 @@ import { auth } from "../firebaseConfig";
 import { doc, onSnapshot, updateDoc, collection } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { signOut } from "firebase/auth";
+import { useTranslation } from 'react-i18next';
+
 
 const Profile = ({ navigation }) => {
+  const { t } = useTranslation();
+
   const [userData, setUserData] = useState(null);
   const [editing, setEditing] = useState(false);
   const [updatedData, setUpdatedData] = useState({});
@@ -132,14 +136,14 @@ const Profile = ({ navigation }) => {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Date Joined</Text>
+            <Text style={styles.cardLabel}>{t('profile.date')}</Text>
             <Text style={styles.cardValue}>
               {formatDate(user?.metadata?.creationTime)}
             </Text>
           </View>
 
           <View style={styles.card}>
-      <Text style={styles.cardLabel}>Location (State)</Text>
+      <Text style={styles.cardLabel}>{t('profile.locationTitle')}</Text>
       {editing ? (
         <Picker
           selectedValue={updatedData.location || ""}
@@ -194,7 +198,7 @@ const Profile = ({ navigation }) => {
     </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Preferred Language</Text>
+            <Text style={styles.cardLabel}>{t('profile.languageTitle')}</Text>
             {editing ? (
               <Picker
                 selectedValue={updatedData.language || "english"}
@@ -204,8 +208,8 @@ const Profile = ({ navigation }) => {
                 }
               >
                 <Picker.Item label="English" value="english" />
-                <Picker.Item label="Tamil" value="tamil" />
-                <Picker.Item label="Hindi" value="hindi" />
+                <Picker.Item label="தமிழ்" value="tamil" />
+                <Picker.Item label="हिन्दी" value="hindi" />
               </Picker>
             ) : (
               <Text style={styles.cardValue}>
@@ -216,7 +220,7 @@ const Profile = ({ navigation }) => {
 
           {userData?.vet ??
             <View style={styles.card}>
-            <Text style={styles.cardLabel}>Cattle</Text>
+            <Text style={styles.cardLabel}>Livestock</Text>
             {cattle.length > 0 ? (
               cattle.map((cattleItem) => (
                 <View key={cattleItem.id} style={styles.cattleItem}>
@@ -240,6 +244,16 @@ const Profile = ({ navigation }) => {
               <Text style={styles.buttonText}>Add Cattle</Text>
             </TouchableOpacity>
             }
+
+            {/* {userData?.admin ?
+              <TouchableOpacity
+              style={[styles.button, styles.editButton]}
+              onPress={() => navigation.navigate("Admin")}
+            >
+              <Text style={styles.buttonText}>Admin</Text>
+            </TouchableOpacity>
+            : ""
+            } */}
 
 
           {editing ? (
@@ -266,7 +280,7 @@ const Profile = ({ navigation }) => {
               style={[styles.button, styles.editButton]}
               onPress={() => setEditing(true)}
             >
-              <Text style={styles.buttonText}>Edit Profile</Text>
+              <Text style={styles.buttonText}>{t('profile.edit')}</Text>
             </TouchableOpacity>
           )}
 
@@ -275,7 +289,7 @@ const Profile = ({ navigation }) => {
             style={[styles.button, styles.logoutButton]}
             onPress={handleLogout}
           >
-            <Text style={styles.buttonText}>Logout</Text>
+            <Text style={styles.buttonText}>{t('profile.logoutTitle')}</Text>
           </TouchableOpacity>
         </>
       ) : (

@@ -467,7 +467,6 @@ const ChatBot = ({route, navigation}) => {
       ${route.params?.input}
       
       `;
-      console.log(combinedQuery)
       
       const payload = {
         model: "gpt-4o",

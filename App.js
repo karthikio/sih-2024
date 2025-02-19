@@ -360,6 +360,15 @@ const App = () => {
           headerTintColor: "#347928",
         }}
         />
+         <Stack.Screen 
+        name="PDFViewer" 
+        component={PDFViewer}
+        options={{
+          headerTitle: "PDF Viewer",
+          headerStyle: { backgroundColor: "#f8f8f8" },
+          headerTintColor: "#347928",
+        }}
+        />
         </>
         )}
       </Stack.Navigator>

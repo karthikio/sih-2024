@@ -39,8 +39,7 @@ const Home = ({ navigation }) => {
 const currentMonth = monthNames[new Date().getMonth()];
 
   const API_KEY = "6ecc21b866f6451785f4f772788d75a9"; 
-  const GPT_API_KEY = "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"; // Replace with your ChatGPT API key
-  
+  const GPT_API_KEY = "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"; 
   // const API_KEY = "api_key"; 
   // const GPT_API_KEY = "gpt_api_key";
   const { response, isLoading: aiLoading, sendMessage } = useChatGPT(GPT_API_KEY);
@@ -297,7 +296,7 @@ const currentMonth = monthNames[new Date().getMonth()];
             <Text style={styles.tipText}>
             {t('home.tipsCrops')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tipItem}>
+          <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("PDFViewer")}>
 
             <Image
               source={require("../assets/icons/folder.png")} // Replace with your image

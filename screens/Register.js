@@ -110,9 +110,9 @@ const Register = ({ navigation }) => {
                         style={styles.picker}
                         onValueChange={(itemValue) => setLanguage(itemValue)}
                     >
-                        <Picker.Item label="English" value="english" />
-                        <Picker.Item label="हिन्दी" value="hindi" />
-                        <Picker.Item label="தமிழ்" value="tamil" />
+                    <Picker.Item label="English" value="english" />
+                    <Picker.Item label="हिन्दी" value="hindi" />
+                    <Picker.Item label="தமிழ்" value="tamil" />
                     </Picker>
 
                     <TouchableOpacity

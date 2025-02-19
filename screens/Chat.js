@@ -369,7 +369,7 @@ const CommunityChat = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
-                        </TouchableWithoutFeedback>
+                    </TouchableWithoutFeedback>
                 </View>
             </Modal>
         </View>
