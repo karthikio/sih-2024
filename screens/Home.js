@@ -296,7 +296,7 @@ const currentMonth = monthNames[new Date().getMonth()];
             <Text style={styles.tipText}>
             {t('home.tipsCrops')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("PDFViewer")}>
+          <TouchableOpacity style={styles.tipItem} onPress={() => navigation.navigate("PDFList")}>
 
             <Image
               source={require("../assets/icons/folder.png")} // Replace with your image

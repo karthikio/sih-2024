@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 const pdfFiles = [
-  // { id: '1', name: 'Document 1', uri: require('../assets/pdfs/cow/Anthrax.pdf') },
-  // { id: '2', name: 'Document 2', uri: require('./assets/pdfs/Black Quarter(BQ).pdf') },
-  // { id: '3', name: 'Document 3', uri: require('./assets/pdfs/Bovine Viral Diarrhoea (BVD).pdf') },
-  // { id: '4', name: 'Document 4', uri: require('./assets/pdfs/Gastrointestinal parasitism.pdf') },
-  // { id: '5', name: 'Document 5', uri: require('./assets/pdfs/Ketosis(Acetonemia).pdf') },
-  // { id: '5', name: 'Document 5', uri: require('./assets/pdfs/Mastitis.pdf') },
+  { id: '1', name: 'Anthrax', uri: require('../assets/pdfs/Anthrax.pdf') },
+  { id: '2', name: 'Black Quarter(BQ)', uri: require('../assets/pdfs/Black Quarter(BQ).pdf') },
+  { id: '3', name: 'Bovine Viral Diarrhoea (BVD)', uri: require('../assets/pdfs/Bovine Viral Diarrhoea (BVD).pdf') },
+  { id: '4', name: 'Gastrointestinal parasitism', uri: require('../assets/pdfs/Gastrointestinal parasitism.pdf') },
+  { id: '5', name: 'Ketosis(Acetonemia)', uri: require('../assets/pdfs/Ketosis(Acetonemia).pdf') },
+  { id: '6', name: 'Mastitis', uri: require('../assets/pdfs/Mastitis.pdf') },
 ];
 
 const PDFList = ({ navigation }) => {

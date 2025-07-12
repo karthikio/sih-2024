@@ -304,7 +304,7 @@ const App = () => {
           headerTintColor: "#347928",
         }}
         />
-        {/* <Stack.Screen 
+        <Stack.Screen 
         name="PDFList" 
         component={PDFList}
         options={{
@@ -312,7 +312,7 @@ const App = () => {
           headerStyle: { backgroundColor: "#f8f8f8" },
           headerTintColor: "#347928",
         }}
-         /> */}
+         />
         {/* <Stack.Screen 
         name="PDFViewer" 
         component={PDFViewer} 
